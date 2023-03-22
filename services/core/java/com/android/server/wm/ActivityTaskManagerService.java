@@ -196,6 +196,7 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.DeviceIntegrationUtils;
 import android.os.FactoryTest;
 import android.os.FileUtils;
 import android.os.Handler;
@@ -882,7 +883,11 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
         mTaskFragmentOrganizerController =
                 mWindowOrganizerController.mTaskFragmentOrganizerController;
         mBackNavigationController = new BackNavigationController();
-        mRemoteTaskManager = new RemoteTaskManager(this);
+        if (!DeviceIntegrationUtils.DISABLE_DEVICE_INTEGRATION) {
+            mRemoteTaskManager = new RemoteTaskManager(this);
+        } else {
+            mRemoteTaskManager = null;
+        }
     }
 
     public void onSystemReady() {
@@ -1081,7 +1086,10 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
             mTaskSupervisor.setWindowManager(wm);
             mRootWindowContainer.setWindowManager(wm);
             mBackNavigationController.setWindowManager(wm);
-            mRemoteTaskManager.setRootWindowContainer(mRootWindowContainer);
+            if (!DeviceIntegrationUtils.DISABLE_DEVICE_INTEGRATION
+                && mRemoteTaskManager != null) {
+                mRemoteTaskManager.setRootWindowContainer(mRootWindowContainer);
+            }
         }
     }
 
@@ -3732,7 +3740,8 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
         // that may somehow cause difficulty for handling the Launch same app scenarios. In addition,
         // pip mode comes with bad user experiences(whole black screen) when shows in Virtual Display
         // in some cases, so we have to relinquish this mode.
-        if (getRemoteTaskManager().anyTaskExist(r.getTask())) {
+        if (!DeviceIntegrationUtils.DISABLE_DEVICE_INTEGRATION
+             && getRemoteTaskManager().anyTaskExist(r.getTask())) {
             return false;
         }
 
